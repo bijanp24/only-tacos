@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  username       String   @unique
+  passwordHash   String
+  displayName    String
+  bio            String   @default("")
+  avatarUrl      String?
+  isCreator      Boolean  @default(false)
+  monthlyPrice   Int      @default(500) // cents
+  createdAt      DateTime @default(now())
+
+  posts            Post[]
+  sessions         Session[]
+  subscriptions    Subscription[] @relation("Subscriber")
+  subscribers      Subscription[] @relation("Creator")
+  tipsSent         Tip[]          @relation("TipFrom")
+  tipsReceived     Tip[]          @relation("TipTo")
+  conversationsA   Conversation[] @relation("ConvUserA")
+  conversationsB   Conversation[] @relation("ConvUserB")
+  messagesSent     Message[]      @relation("MessageSender")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  title     String
+  body      String
+  imageUrl  String?
+  isLocked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, createdAt])
+}
+
+model Subscription {
+  id           String   @id @default(cuid())
+  subscriberId String
+  creatorId    String
+  startedAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  subscriber   User     @relation("Subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  creator      User     @relation("Creator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, creatorId])
+  @@index([creatorId])
+}
+
+model Tip {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  amount    Int      // cents
+  message   String   @default("")
+  createdAt DateTime @default(now())
+
+  from      User     @relation("TipFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to        User     @relation("TipTo",   fields: [toId],   references: [id], onDelete: Cascade)
+
+  @@index([toId, createdAt])
+}
+
+// userAId < userBId by string order, enforced in code, to canonicalize the pair.
+model Conversation {
+  id            String    @id @default(cuid())
+  userAId       String
+  userBId       String
+  lastMessageAt DateTime  @default(now())
+
+  userA         User      @relation("ConvUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB         User      @relation("ConvUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  messages      Message[]
+
+  @@unique([userAId, userBId])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  createdAt      DateTime     @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}

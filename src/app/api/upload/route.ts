@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "node:fs/promises";
-import path from "node:path";
+import { getStore } from "@netlify/blobs";
 import crypto from "node:crypto";
 import { getCurrentUser } from "@/lib/auth";
 
-const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+const MAX_BYTES = 8 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 export async function POST(req: NextRequest) {
@@ -25,10 +24,10 @@ export async function POST(req: NextRequest) {
 
   const ext = file.type.split("/")[1].replace("jpeg", "jpg");
   const filename = `${crypto.randomBytes(16).toString("hex")}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(dir, { recursive: true });
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, filename), buffer);
+  const store = getStore("uploads");
+  await store.set(filename, Buffer.from(await file.arrayBuffer()), {
+    metadata: { contentType: file.type },
+  });
 
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  return NextResponse.json({ url: `/api/files/${filename}` });
 }

@@ -22,38 +22,56 @@ export default async function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-neutral-50 text-neutral-900">
-        <header className="border-b border-neutral-200 bg-white">
-          <div className="mx-auto max-w-5xl flex items-center justify-between px-4 py-3">
-            <Link href="/" className="font-bold text-xl tracking-tight">
-              <span aria-hidden>🌮</span> OnlyTacos
+      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+        {/* ── Header ── */}
+        <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--surface)]/90 backdrop-blur-md">
+          <div className="mx-auto max-w-5xl flex items-center justify-between px-4 h-14">
+            <Link
+              href="/"
+              className="flex items-center gap-2 font-bold text-lg tracking-tight hover:opacity-80 transition-opacity"
+            >
+              <span className="text-2xl leading-none">🌮</span>
+              <span>OnlyTacos</span>
             </Link>
-            <nav className="flex items-center gap-4 text-sm">
+
+            <nav className="flex items-center gap-1 text-sm font-medium">
               {user ? (
                 <>
-                  <Link href="/inbox" className="hover:underline">
+                  <Link
+                    href="/inbox"
+                    className="px-3 py-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+                  >
                     Inbox
                   </Link>
-                  <Link href="/dashboard" className="hover:underline">
+                  <Link
+                    href="/dashboard"
+                    className="px-3 py-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+                  >
                     Dashboard
                   </Link>
-                  <Link href={`/${user.username}`} className="hover:underline">
+                  <Link
+                    href={`/${user.username}`}
+                    className="px-3 py-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+                  >
                     @{user.username}
                   </Link>
-                  <form action={signOut}>
-                    <button className="text-neutral-600 hover:text-neutral-900">
+                  <form action={signOut} className="ml-1">
+                    <button className="px-3 py-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors">
                       Sign out
                     </button>
                   </form>
                 </>
               ) : (
                 <>
-                  <Link href="/sign-in" className="hover:underline">
+                  <Link
+                    href="/sign-in"
+                    className="px-3 py-1.5 rounded-md text-[var(--text-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+                  >
                     Sign in
                   </Link>
                   <Link
                     href="/sign-up"
-                    className="rounded bg-orange-600 px-3 py-1.5 text-white hover:bg-orange-700"
+                    className="ml-1 rounded-lg bg-orange-600 px-4 py-1.5 text-white font-semibold shadow-sm hover:bg-orange-700 active:scale-95 transition-all"
                   >
                     Sign up
                   </Link>
@@ -62,11 +80,20 @@ export default async function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-8">
+
+        {/* ── Content ── */}
+        <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-10">
           {children}
         </main>
-        <footer className="border-t border-neutral-200 bg-white py-6 text-center text-xs text-neutral-500">
-          OnlyTacos · SFW content only · Built with Next.js
+
+        {/* ── Footer ── */}
+        <footer className="border-t border-[var(--border)] bg-[var(--surface)] py-8">
+          <div className="mx-auto max-w-5xl px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--text-subtle)]">
+            <span className="flex items-center gap-1.5 font-semibold text-[var(--text-muted)]">
+              🌮 OnlyTacos
+            </span>
+            <span>SFW taco content only · Built with Next.js</span>
+          </div>
         </footer>
       </body>
     </html>

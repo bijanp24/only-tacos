@@ -28,61 +28,59 @@ export default async function ThreadPage({
     conversation.userAId === me.id ? conversation.userB : conversation.userA;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Link href="/inbox" className="text-sm text-neutral-500 hover:underline">
+    <div className="space-y-4 max-w-2xl mx-auto">
+      {/* ── Breadcrumb ── */}
+      <div className="flex items-center gap-2 text-sm">
+        <Link href="/inbox" className="text-[var(--text-muted)] hover:text-orange-600 transition-colors">
           ← Inbox
         </Link>
-        <span className="text-neutral-300">·</span>
-        <Link href={`/${other.username}`} className="font-medium hover:underline">
-          {other.displayName}{" "}
-          <span className="text-neutral-500">@{other.username}</span>
+        <span className="text-[var(--border)]">/</span>
+        <Link href={`/${other.username}`} className="font-semibold hover:text-orange-600 transition-colors">
+          {other.displayName}
+          <span className="font-normal text-[var(--text-muted)] ml-1">@{other.username}</span>
         </Link>
       </div>
 
-      <ul className="space-y-2 rounded-lg border border-neutral-200 bg-white p-4 min-h-[300px]">
+      {/* ── Message thread ── */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 min-h-[360px] flex flex-col gap-3 shadow-sm">
         {conversation.messages.length === 0 && (
-          <li className="text-center text-sm text-neutral-500 py-12">
-            No messages yet. Say hi.
-          </li>
+          <div className="flex-1 flex items-center justify-center text-sm text-[var(--text-muted)]">
+            No messages yet. Say hi 👋
+          </div>
         )}
         {conversation.messages.map((m) => {
           const mine = m.senderId === me.id;
           return (
-            <li key={m.id} className={mine ? "text-right" : "text-left"}>
+            <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
                 className={
-                  "inline-block max-w-[75%] rounded-2xl px-3 py-2 text-sm " +
+                  "max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm " +
                   (mine
-                    ? "bg-orange-600 text-white"
-                    : "bg-neutral-100 text-neutral-900")
+                    ? "rounded-br-sm bg-orange-600 text-white"
+                    : "rounded-bl-sm bg-[var(--surface-hover)] text-[var(--foreground)]")
                 }
               >
-                <div className="whitespace-pre-wrap">{m.body}</div>
-                <div
-                  className={
-                    "mt-1 text-[10px] " +
-                    (mine ? "text-orange-100" : "text-neutral-500")
-                  }
-                >
-                  {m.createdAt.toLocaleString()}
+                <div className="whitespace-pre-wrap leading-relaxed">{m.body}</div>
+                <div className={`mt-1 text-[10px] ${mine ? "text-orange-200" : "text-[var(--text-subtle)]"}`}>
+                  {m.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </div>
               </div>
-            </li>
+            </div>
           );
         })}
-      </ul>
+      </div>
 
+      {/* ── Reply form ── */}
       <form action={sendMessage} className="flex gap-2">
         <input type="hidden" name="recipientId" value={other.id} />
         <input
           name="body"
-          placeholder="Write a message..."
+          placeholder="Write a message…"
           required
           maxLength={2000}
-          className="flex-1 rounded border border-neutral-300 px-3 py-2"
+          className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm placeholder:text-[var(--text-subtle)] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
         />
-        <button className="rounded bg-orange-600 px-4 py-2 text-white font-medium hover:bg-orange-700">
+        <button className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 active:scale-[0.98] transition-all">
           Send
         </button>
       </form>

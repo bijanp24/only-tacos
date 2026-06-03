@@ -2,11 +2,31 @@
 
 import { useState } from "react";
 import { createPost } from "../actions";
+import { suggestTitle } from "../actions/ai";
 
 export default function PostComposer() {
   const [imageUrl, setImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+
+  async function onSuggestTitle() {
+    setSuggesting(true);
+    setSuggestError(null);
+    try {
+      const suggestion = await suggestTitle(body);
+      if (suggestion) setTitle(suggestion);
+    } catch (err) {
+      setSuggestError(
+        err instanceof Error ? err.message : "Could not suggest a title.",
+      );
+    } finally {
+      setSuggesting(false);
+    }
+  }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -29,17 +49,34 @@ export default function PostComposer() {
 
   return (
     <form action={createPost} className="space-y-4">
-      <input
-        name="title"
-        placeholder="Post title"
-        required
-        className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3.5 py-2.5 text-sm placeholder:text-[var(--text-subtle)] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-      />
+      <div className="space-y-1.5">
+        <div className="flex gap-2">
+          <input
+            name="title"
+            placeholder="Post title"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3.5 py-2.5 text-sm placeholder:text-[var(--text-subtle)] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+          />
+          <button
+            type="button"
+            onClick={onSuggestTitle}
+            disabled={suggesting || !body.trim()}
+            className="shrink-0 rounded-lg border border-orange-300 bg-orange-50 px-3.5 py-2.5 text-sm font-semibold text-orange-700 hover:bg-orange-100 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {suggesting ? "Thinking…" : "✨ Suggest title"}
+          </button>
+        </div>
+        {suggestError && <p className="text-xs text-red-600">{suggestError}</p>}
+      </div>
       <textarea
         name="body"
         placeholder="Tell the world about today's taco…"
         required
         rows={4}
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
         className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3.5 py-2.5 text-sm placeholder:text-[var(--text-subtle)] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition resize-none"
       />
 

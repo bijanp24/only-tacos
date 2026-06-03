@@ -9,10 +9,13 @@ import { subscribe, unsubscribe, sendTip, sendMessage } from "../actions";
 
 export default async function CreatorPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ username: string }>;
+  searchParams: Promise<{ checkout?: string; tip?: string }>;
 }) {
   const { username } = await params;
+  const { checkout, tip } = await searchParams;
   const creator = await db.user.findUnique({
     where: { username },
     include: {
@@ -33,8 +36,31 @@ export default async function CreatorPage({
         })
       : null;
 
+  const checkoutNotice =
+    checkout === "success"
+      ? { tone: "ok" as const, text: "Subscription confirmed — payment received. 🎉" }
+      : checkout === "cancelled"
+        ? { tone: "warn" as const, text: "Checkout cancelled. No payment was taken." }
+        : tip === "success"
+          ? { tone: "ok" as const, text: "Tip sent — payment received. Thank you! 🌮" }
+          : tip === "cancelled"
+            ? { tone: "warn" as const, text: "Tip cancelled. No payment was taken." }
+            : null;
+
   return (
     <div className="space-y-8">
+      {checkoutNotice && (
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm ${
+            checkoutNotice.tone === "ok"
+              ? "border-green-200 bg-green-50 text-green-700"
+              : "border-amber-200 bg-amber-50 text-amber-700"
+          }`}
+        >
+          {checkoutNotice.text}
+        </div>
+      )}
+
       {/* ── Profile header ── */}
       <header className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-start gap-5">

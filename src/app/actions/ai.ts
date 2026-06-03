@@ -24,7 +24,7 @@ export async function suggestTitle(body: string): Promise<string> {
       system:
         "You write concise, engaging titles for posts on a taco creator platform.",
       temperature: 0.8,
-      maxTokens: 32,
+      maxTokens: 64,
     },
   );
 

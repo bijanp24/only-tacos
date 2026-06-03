@@ -1,5 +1,15 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
 import type { AiProvider, CompleteOptions, ModerationVerdict } from "./types";
+
+// The 2.5+ "flash" models enable a reasoning step ("thinking") by default that
+// consumes the maxOutputTokens budget. For these short utility calls (titles,
+// JSON moderation) it adds cost/latency and can starve the actual answer, so we
+// turn it off. thinkingConfig isn't in the legacy SDK's typed config, hence the
+// extension below.
+type GeminiGenerationConfig = GenerationConfig & {
+  thinkingConfig?: { thinkingBudget: number };
+};
+const NO_THINKING = { thinkingBudget: 0 } as const;
 
 const MODERATION_CATEGORIES = [
   "harassment",
@@ -41,32 +51,33 @@ export function createGeminiProvider(): AiProvider {
     throw new Error("GOOGLE_GEMINI_API_KEY is not set (AI_PROVIDER=gemini).");
   }
   const genAI = new GoogleGenerativeAI(apiKey);
-  const modelName = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
+  const modelName = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
   return {
     name: "gemini",
 
     async complete(prompt: string, opts?: CompleteOptions): Promise<string> {
+      const generationConfig: GeminiGenerationConfig = {
+        temperature: opts?.temperature,
+        maxOutputTokens: opts?.maxTokens,
+        thinkingConfig: NO_THINKING,
+      };
       const model = genAI.getGenerativeModel({
         model: modelName,
         ...(opts?.system ? { systemInstruction: opts.system } : {}),
-        generationConfig: {
-          temperature: opts?.temperature,
-          maxOutputTokens: opts?.maxTokens,
-        },
+        generationConfig,
       });
       const result = await model.generateContent(prompt);
       return result.response.text().trim();
     },
 
     async moderate(text: string): Promise<ModerationVerdict> {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: {
-          temperature: 0,
-          responseMimeType: "application/json",
-        },
-      });
+      const generationConfig: GeminiGenerationConfig = {
+        temperature: 0,
+        responseMimeType: "application/json",
+        thinkingConfig: NO_THINKING,
+      };
+      const model = genAI.getGenerativeModel({ model: modelName, generationConfig });
       const prompt = [
         "You are a strict content-moderation classifier for a SFW platform.",
         "Classify the TEXT for disallowed content and respond with ONLY JSON of the form:",

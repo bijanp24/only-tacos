@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { createSubscriptionCheckout } from "@/lib/payments/checkout";
 
 export async function subscribe(formData: FormData) {
   const user = await getCurrentUser();
@@ -13,13 +14,10 @@ export async function subscribe(formData: FormData) {
   const creator = await db.user.findUnique({ where: { id: creatorId } });
   if (!creator) return;
 
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  await db.subscription.upsert({
-    where: { subscriberId_creatorId: { subscriberId: user.id, creatorId } },
-    create: { subscriberId: user.id, creatorId, expiresAt },
-    update: { expiresAt },
-  });
-  revalidatePath(`/${creator.username}`);
+  // No DB row here: hand off to Stripe Checkout. The Subscription is written by
+  // the webhook only after payment is confirmed.
+  const checkoutUrl = await createSubscriptionCheckout(user, creator);
+  redirect(checkoutUrl);
 }
 
 export async function unsubscribe(formData: FormData) {

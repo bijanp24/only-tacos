@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { createTipCheckout } from "@/lib/payments/checkout";
 
 export async function sendTip(formData: FormData) {
   const user = await getCurrentUser();
@@ -14,9 +14,9 @@ export async function sendTip(formData: FormData) {
   if (!creatorId || creatorId === user.id || !amount) return;
   const creator = await db.user.findUnique({ where: { id: creatorId } });
   if (!creator) return;
-  await db.tip.create({
-    data: { fromId: user.id, toId: creatorId, amount, message },
-  });
-  revalidatePath(`/${creator.username}`);
-  revalidatePath("/dashboard");
+
+  // No DB row here: hand off to Stripe Checkout. The Tip is written by the
+  // webhook only after the one-time payment is confirmed.
+  const checkoutUrl = await createTipCheckout(user, creator, amount, message);
+  redirect(checkoutUrl);
 }

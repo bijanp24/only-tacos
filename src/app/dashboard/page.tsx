@@ -21,7 +21,7 @@ export default async function DashboardPage({
       where: { authorId: user.id },
       orderBy: { createdAt: "desc" },
     }),
-    db.subscription.count({ where: { creatorId: user.id } }),
+    db.subscription.count({ where: { creatorId: user.id, status: "active" } }),
     db.subscription.findMany({
       where: { subscriberId: user.id },
       include: { creator: true },
@@ -39,6 +39,8 @@ export default async function DashboardPage({
     }),
   ]);
 
+  // Earnings come only from rows that exist post-payment: active subscriptions
+  // (written by the Stripe webhook) and confirmed tips.
   const totalCents = user.monthlyPrice * subCount + (tipTotal._sum.amount ?? 0);
 
   return (
@@ -126,7 +128,7 @@ export default async function DashboardPage({
                   </span>
                 </div>
                 {t.message && (
-                  <p className="mt-1 text-sm text-[var(--text-muted)] italic">"{t.message}"</p>
+                  <p className="mt-1 text-sm text-[var(--text-muted)] italic">&ldquo;{t.message}&rdquo;</p>
                 )}
               </li>
             ))}

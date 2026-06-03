@@ -17,6 +17,7 @@ model User {
   avatarUrl      String?
   isCreator      Boolean  @default(false)
   monthlyPrice   Int      @default(500) // cents
+  stripeCustomerId String? // Stripe Customer id, set on first checkout
   createdAt      DateTime @default(now())
 
   posts            Post[]
@@ -44,6 +45,7 @@ model Post {
   body      String
   imageUrl  String?
   isLocked  Boolean  @default(false)
+  flagged   Boolean  @default(false) // set by AI moderation
   createdAt DateTime @default(now())
 
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -57,6 +59,8 @@ model Subscription {
   creatorId    String
   startedAt    DateTime @default(now())
   expiresAt    DateTime
+  status                 String  @default("active") // active | canceled | past_due
+  stripeSubscriptionId   String? // Stripe Subscription id
 
   subscriber   User     @relation("Subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
   creator      User     @relation("Creator", fields: [creatorId], references: [id], onDelete: Cascade)
@@ -71,6 +75,7 @@ model Tip {
   toId      String
   amount    Int      // cents
   message   String   @default("")
+  stripePaymentIntentId String? // Stripe PaymentIntent id
   createdAt DateTime @default(now())
 
   from      User     @relation("TipFrom", fields: [fromId], references: [id], onDelete: Cascade)
@@ -99,10 +104,24 @@ model Message {
   conversationId String
   senderId       String
   body           String
+  flagged        Boolean      @default(false) // set by AI moderation
   createdAt      DateTime     @default(now())
 
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
+}
+
+// AI moderation verdict for a Post or Message (targetType discriminates).
+model ModerationResult {
+  id         String   @id @default(cuid())
+  targetType String   // "post" | "message"
+  targetId   String
+  provider   String   // "openai" | "gemini"
+  flagged    Boolean  @default(false)
+  categories Json     // provider category -> score/bool
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
 }

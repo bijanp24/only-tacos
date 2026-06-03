@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { moderateContent } from "@/lib/moderation";
 import { findOrCreateConversation } from "@/lib/conversations";
 
 export async function sendMessage(formData: FormData) {
@@ -16,9 +17,18 @@ export async function sendMessage(formData: FormData) {
   if (!recipient) return;
 
   const conversation = await findOrCreateConversation(user.id, recipientId);
-  await db.message.create({
+  const message = await db.message.create({
     data: { conversationId: conversation.id, senderId: user.id, body },
   });
+
+  const flagged = await moderateContent("message", message.id, body);
+  if (flagged) {
+    await db.message.update({
+      where: { id: message.id },
+      data: { flagged: true },
+    });
+  }
+
   await db.conversation.update({
     where: { id: conversation.id },
     data: { lastMessageAt: new Date() },

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { moderateContent } from "@/lib/moderation";
 import { errRedirect } from "./_shared";
 
 export async function createPost(formData: FormData) {
@@ -16,9 +17,15 @@ export async function createPost(formData: FormData) {
   const isLocked = formData.get("isLocked") === "on";
   if (!title || !body) errRedirect("/dashboard", "Title and body required.");
 
-  await db.post.create({
+  const post = await db.post.create({
     data: { authorId: user.id, title, body, imageUrl, isLocked },
   });
+
+  const flagged = await moderateContent("post", post.id, `${title}\n\n${body}`);
+  if (flagged) {
+    await db.post.update({ where: { id: post.id }, data: { flagged: true } });
+  }
+
   revalidatePath("/");
   revalidatePath(`/${user.username}`);
   revalidatePath("/dashboard");
